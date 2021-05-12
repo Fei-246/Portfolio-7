@@ -1,0 +1,83 @@
+---
+title: "Portfolio7"
+author: "Fei Xie"
+date: "5/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#The changing trajectories of CO2 emission and forest land
+Now we use CO2 and Forest data from 1990 to 2015 to see the changing trajectories of CO2 emission and forest land. 
+
+### Load packages and data
+
+```{r load-packages, message=FALSE}
+library(tidyverse) 
+library(dplyr)
+library(rworldmap)
+```
+
+```{r load-data, message=FALSE}
+CO2 <- read_csv("data/co2_emissions_tonnes_per_person.csv", na = c("",".","NA"))
+Forest <- read_csv("data/forest_land_total_area_ha.csv", na = c("",".","NA"))
+```
+
+###Merge longitudinal data points into one column
+
+```{r merge-columns}
+CO2_long <- gather(CO2, year, data, -country)
+library(countrycode)
+CO2_long$continent <- countrycode(sourcevar = CO2_long$country,
+            origin = "country.name",
+            destination = "continent")
+
+forest_long <- gather(Forest, year, data, -country)
+forest_long$continent <- countrycode(sourcevar = forest_long$country,
+            origin = "country.name",
+            destination = "continent")
+```
+
+###Merge the forest and CO2 data sets
+```{r merge-data}
+#add labels
+CO2_long$type <- "CO2"
+forest_long$type <- "forest"
+#return all rows
+combined <- full_join(CO2_long, forest_long)
+```
+
+
+###Changing curves
+```{r forest-curve}
+ggplot(forest_long,
+       aes(x = year,
+           y = data,
+           group = country))+
+  geom_point(size = 1)+
+  geom_line(color = "grey")+
+  stat_smooth(aes(group = 1),  method = "lm", color = "Red") + 
+  stat_summary(aes(group = 1),
+    geom = "point", fun = mean, color = "Blue")+
+  #facet_grid(.~continent)
+  facet_wrap(.~continent, ncol =2 )
+```
+
+```{r CO2-curve}
+ggplot(CO2_long,
+       aes(x = year,
+           y = data,
+           group = country))+
+  geom_point(size = 1)+
+  geom_line(color = "grey")+
+  stat_smooth(aes(group = 1),  method = "lm", color = "Red") + 
+  stat_summary(aes(group = 1),
+    geom = "point", fun = mean, color = "Blue")+
+  #facet_grid(.~continent)
+  facet_wrap(.~continent, ncol =2 )
+```
+
+From the plots above, we know that the number of forest land in each country stays from 1990 to 2015. But a few countries' CO2 emission per person increased, especially in Asia and Americas.
+
